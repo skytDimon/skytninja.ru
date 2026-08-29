@@ -3,6 +3,6 @@ services:
   website:
     build: .
     ports:
-      - "80:80"
+      - "3000:80"
     restart: always
     container_name: skytninja-website
