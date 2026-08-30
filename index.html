@@ -13,6 +13,17 @@
 
 <body>
 
+  <!-- Preloader -->
+  <div id="preloader" class="preloader">
+    <div class="preloader-content">
+      <div class="preloader-logo">Skyt<span>Ninja</span></div>
+      <div class="preloader-bar-track">
+        <div id="preloader-bar" class="preloader-bar"></div>
+      </div>
+      <div id="preloader-percent" class="preloader-percent">0%</div>
+    </div>
+  </div>
+
   <!-- Header -->
   <header class="site-header">
     <div class="header-container">
@@ -23,6 +34,9 @@
         <a href="#cases">Кейсы</a>
         <a href="#contacts" class="btn-outline-sm">Связаться</a>
       </nav>
+      <button class="hamburger" id="hamburger" aria-label="Меню">
+        <span></span><span></span><span></span>
+      </button>
     </div>
   </header>
 
@@ -345,7 +359,7 @@
           <!-- Case 1 -->
           <div class="case-card">
             <div class="case-video-wrapper">
-              <video src="/metriks.mov" autoplay loop muted playsinline class="case-video"></video>
+              <video data-src="/metriks.mov" autoplay loop muted playsinline class="case-video"></video>
             </div>
             <div class="case-content">
               <span class="case-category">e-commerce / интернет-магазин</span>
@@ -356,7 +370,7 @@
           <!-- Case 2 -->
           <div class="case-card">
             <div class="case-video-wrapper">
-              <video src="/prime.mov" autoplay loop muted playsinline class="case-video"></video>
+              <video data-src="/prime.mov" autoplay loop muted playsinline class="case-video"></video>
             </div>
             <div class="case-content">
               <span class="case-category">корпоративный сайт</span>
@@ -367,7 +381,7 @@
           <!-- Case 3 -->
           <div class="case-card">
             <div class="case-video-wrapper">
-              <video src="/romul.mov" autoplay loop muted playsinline class="case-video"></video>
+              <video data-src="/romul.mov" autoplay loop muted playsinline class="case-video"></video>
             </div>
             <div class="case-content">
               <span class="case-category">проект</span>
@@ -398,6 +412,34 @@
       <p>&copy; 2026 SkytNinja. Все права защищены.</p>
     </div>
   </footer>
+
+  <!-- Mobile Navigation Overlay -->
+  <nav class="mobile-nav" id="mobile-nav">
+    <a href="#about" class="mobile-nav-link">Обо мне</a>
+    <a href="#services" class="mobile-nav-link">Услуги</a>
+    <a href="#cases" class="mobile-nav-link">Кейсы</a>
+    <a href="#contacts" class="mobile-nav-link">Связаться</a>
+  </nav>
+
+  <!-- Hamburger Toggle -->
+  <script>
+    const hamburger = document.getElementById('hamburger');
+    const mobileNav = document.getElementById('mobile-nav');
+    if (hamburger && mobileNav) {
+      hamburger.addEventListener('click', () => {
+        hamburger.classList.toggle('active');
+        mobileNav.classList.toggle('active');
+        document.body.style.overflow = mobileNav.classList.contains('active') ? 'hidden' : '';
+      });
+      mobileNav.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => {
+          hamburger.classList.remove('active');
+          mobileNav.classList.remove('active');
+          document.body.style.overflow = '';
+        });
+      });
+    }
+  </script>
 
   <!-- Three.js Scene -->
   <script type="module" src="/main.js"></script>

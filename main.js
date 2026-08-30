@@ -1,7 +1,42 @@
 import './style.css'
 import * as THREE from 'three';
 
-// === Scene Setup ===
+// ============================================
+// Preloader — show loading screen while assets load
+// ============================================
+const preloader = document.getElementById('preloader');
+const preloaderBar = document.getElementById('preloader-bar');
+const preloaderPercent = document.getElementById('preloader-percent');
+let loadProgress = 0;
+let totalAssets = 0;
+let loadedAssets = 0;
+
+function updateProgress(progress) {
+  loadProgress = Math.max(loadProgress, progress);
+  if (preloaderBar) preloaderBar.style.width = loadProgress + '%';
+  if (preloaderPercent) preloaderPercent.textContent = Math.round(loadProgress) + '%';
+}
+
+function hidePreloader() {
+  updateProgress(100);
+  setTimeout(() => {
+    if (preloader) {
+      preloader.classList.add('preloader-hidden');
+      // Remove from DOM after transition
+      setTimeout(() => preloader.remove(), 800);
+    }
+  }, 400);
+}
+
+// ============================================
+// Detect device capabilities
+// ============================================
+const isMobile = window.innerWidth <= 768;
+const isLowEnd = isMobile && (navigator.hardwareConcurrency || 4) <= 4;
+
+// ============================================
+// Scene Setup
+// ============================================
 const container = document.getElementById('canvas-container');
 const scene = new THREE.Scene();
 
@@ -9,281 +44,181 @@ const camera = new THREE.PerspectiveCamera(35, container.clientWidth / container
 camera.position.set(0, 0, 30);
 
 const renderer = new THREE.WebGLRenderer({
-  antialias: true,
+  antialias: !isMobile, // Disable AA on mobile for performance
   alpha: true,
   powerPreference: 'high-performance',
 });
 renderer.setSize(container.clientWidth, container.clientHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2));
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 0.8;
+renderer.toneMappingExposure = 0.85;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 container.appendChild(renderer.domElement);
 
-// === Mouse Interaction State ===
+// ============================================
+// Mouse / Touch Interaction
+// ============================================
 const mouse = new THREE.Vector2(0, 0);
 const targetMouse = new THREE.Vector2(0, 0);
 
-// === Uniforms for shaders ===
-const uniforms = {
-  uTime: { value: 0 },
-  uMouse: { value: new THREE.Vector3(0, 0, 0) },
-};
+// ============================================
+// Studio Environment Map
+// ============================================
+function createStudioEnvironment() {
+  const pmremGenerator = new THREE.PMREMGenerator(renderer);
+  const envScene = new THREE.Scene();
+  envScene.background = new THREE.Color(0x444444);
+
+  const whiteMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
+  const softGrayMat = new THREE.MeshBasicMaterial({ color: 0xbbbbbb, side: THREE.DoubleSide });
+
+  const topPanel = new THREE.Mesh(new THREE.PlaneGeometry(60, 40), whiteMat);
+  topPanel.position.set(0, 30, 0);
+  topPanel.rotation.x = Math.PI / 2;
+  envScene.add(topPanel);
+
+  const keyPanel = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), whiteMat);
+  keyPanel.position.set(25, 10, 25);
+  keyPanel.lookAt(0, 0, 0);
+  envScene.add(keyPanel);
+
+  const fillPanel = new THREE.Mesh(new THREE.PlaneGeometry(25, 25), softGrayMat);
+  fillPanel.position.set(-25, 5, 20);
+  fillPanel.lookAt(0, 0, 0);
+  envScene.add(fillPanel);
+
+  const bottomPanel = new THREE.Mesh(new THREE.PlaneGeometry(50, 30), softGrayMat);
+  bottomPanel.position.set(0, -25, 0);
+  bottomPanel.rotation.x = -Math.PI / 2;
+  envScene.add(bottomPanel);
+
+  const rearPanel = new THREE.Mesh(new THREE.PlaneGeometry(20, 15), whiteMat);
+  rearPanel.position.set(5, 10, -30);
+  rearPanel.lookAt(0, 0, 0);
+  envScene.add(rearPanel);
+
+  const envMap = pmremGenerator.fromScene(envScene, 0.04).texture;
+  pmremGenerator.dispose();
+
+  // Dispose env scene geometries/materials
+  envScene.traverse(obj => {
+    if (obj.geometry) obj.geometry.dispose();
+    if (obj.material) obj.material.dispose();
+  });
+
+  return envMap;
+}
+
+updateProgress(10);
 
 // ============================================
-// GLSL: Classic Perlin 3D Noise (Stefan Gustavson)
+// Create the Silver Planet
 // ============================================
-const noiseGLSL = /* glsl */ `
-  vec4 permute(vec4 x) { return mod(((x * 34.0) + 1.0) * x, 289.0); }
-  vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
-  vec3 fade(vec3 t) { return t * t * t * (t * (t * 6.0 - 15.0) + 10.0); }
+let planetMesh;
 
-  float cnoise(vec3 P) {
-    vec3 Pi0 = floor(P);
-    vec3 Pi1 = Pi0 + vec3(1.0);
-    Pi0 = mod(Pi0, 289.0);
-    Pi1 = mod(Pi1, 289.0);
-    vec3 Pf0 = fract(P);
-    vec3 Pf1 = Pf0 - vec3(1.0);
-    vec4 ix = vec4(Pi0.x, Pi1.x, Pi0.x, Pi1.x);
-    vec4 iy = vec4(Pi0.yy, Pi1.yy);
-    vec4 iz0 = Pi0.zzzz;
-    vec4 iz1 = Pi1.zzzz;
+function initPlanet() {
+  // Lower segments on mobile for performance
+  const segments = isMobile ? 128 : 256;
+  const geometry = new THREE.SphereGeometry(6, segments, segments);
 
-    vec4 ixy = permute(permute(ix) + iy);
-    vec4 ixy0 = permute(ixy + iz0);
-    vec4 ixy1 = permute(ixy + iz1);
+  const manager = new THREE.LoadingManager();
+  totalAssets = 2;
 
-    vec4 gx0 = ixy0 / 7.0;
-    vec4 gy0 = fract(floor(gx0) / 7.0) - 0.5;
-    gx0 = fract(gx0);
-    vec4 gz0 = vec4(0.5) - abs(gx0) - abs(gy0);
-    vec4 sz0 = step(gz0, vec4(0.0));
-    gx0 -= sz0 * (step(0.0, gx0) - 0.5);
-    gy0 -= sz0 * (step(0.0, gy0) - 0.5);
+  manager.onProgress = (url, loaded, total) => {
+    loadedAssets = loaded;
+    updateProgress(10 + (loaded / total) * 70);
+  };
 
-    vec4 gx1 = ixy1 / 7.0;
-    vec4 gy1 = fract(floor(gx1) / 7.0) - 0.5;
-    gx1 = fract(gx1);
-    vec4 gz1 = vec4(0.5) - abs(gx1) - abs(gy1);
-    vec4 sz1 = step(gz1, vec4(0.0));
-    gx1 -= sz1 * (step(0.0, gx1) - 0.5);
-    gy1 -= sz1 * (step(0.0, gy1) - 0.5);
+  manager.onLoad = () => {
+    updateProgress(90);
+    // Start rendering and hide preloader
+    scene.environment = createStudioEnvironment();
+    updateProgress(95);
+    animate();
+    hidePreloader();
+  };
 
-    vec3 g000 = vec3(gx0.x, gy0.x, gz0.x);
-    vec3 g100 = vec3(gx0.y, gy0.y, gz0.y);
-    vec3 g010 = vec3(gx0.z, gy0.z, gz0.z);
-    vec3 g110 = vec3(gx0.w, gy0.w, gz0.w);
-    vec3 g001 = vec3(gx1.x, gy1.x, gz1.x);
-    vec3 g101 = vec3(gx1.y, gy1.y, gz1.y);
-    vec3 g011 = vec3(gx1.z, gy1.z, gz1.z);
-    vec3 g111 = vec3(gx1.w, gy1.w, gz1.w);
-
-    vec4 norm0 = taylorInvSqrt(vec4(dot(g000,g000), dot(g010,g010), dot(g100,g100), dot(g110,g110)));
-    g000 *= norm0.x; g010 *= norm0.y; g100 *= norm0.z; g110 *= norm0.w;
-    vec4 norm1 = taylorInvSqrt(vec4(dot(g001,g001), dot(g011,g011), dot(g101,g101), dot(g111,g111)));
-    g001 *= norm1.x; g011 *= norm1.y; g101 *= norm1.z; g111 *= norm1.w;
-
-    float n000 = dot(g000, Pf0);
-    float n100 = dot(g100, vec3(Pf1.x, Pf0.yz));
-    float n010 = dot(g010, vec3(Pf0.x, Pf1.y, Pf0.z));
-    float n110 = dot(g110, vec3(Pf1.xy, Pf0.z));
-    float n001 = dot(g001, vec3(Pf0.xy, Pf1.z));
-    float n101 = dot(g101, vec3(Pf1.x, Pf0.y, Pf1.z));
-    float n011 = dot(g011, vec3(Pf0.x, Pf1.yz));
-    float n111 = dot(g111, Pf1);
-
-    vec3 fade_xyz = fade(Pf0);
-    vec4 n_z = mix(vec4(n000, n100, n010, n110), vec4(n001, n101, n011, n111), fade_xyz.z);
-    vec2 n_yz = mix(n_z.xy, n_z.zw, fade_xyz.y);
-    float n_xyz = mix(n_yz.x, n_yz.y, fade_xyz.x);
-    return 2.2 * n_xyz;
-  }
-`;
-
-// ============================================
-// Create the Ferrofluid Sphere
-// ============================================
-let fluidMesh;
-let compiledShader = null; // Keep reference for uniform updates
-
-function initFluid() {
-  // High-detail icosahedron for smooth organic deformation
-  const geometry = new THREE.IcosahedronGeometry(6, 128);
+  const textureLoader = new THREE.TextureLoader(manager);
+  const normalMap = textureLoader.load('/earth_normal.jpg');
+  const displacementMap = textureLoader.load('/earth_displacement.jpg');
 
   const material = new THREE.MeshPhysicalMaterial({
-    color: 0x030303,
+    color: 0xc0c0c0,
     metalness: 1.0,
-    roughness: 0.15,
-    clearcoat: 0.3,
-    clearcoatRoughness: 0.2,
-    reflectivity: 0.5,
-    envMapIntensity: 0.6,
+    roughness: 0.22,
+    normalMap: normalMap,
+    normalScale: new THREE.Vector2(0.8, 0.8),
+    displacementMap: displacementMap,
+    displacementScale: 0.45,
+    clearcoat: isMobile ? 0 : 0.3, // Skip clearcoat on mobile (expensive)
+    clearcoatRoughness: 0.1,
+    envMapIntensity: 1.0,
     side: THREE.FrontSide,
   });
 
-  // Inject custom vertex shader for noise-based deformation
-  material.onBeforeCompile = (shader) => {
-    shader.uniforms.uTime = uniforms.uTime;
-    shader.uniforms.uMouse = uniforms.uMouse;
-    compiledShader = shader;
+  planetMesh = new THREE.Mesh(geometry, material);
 
-    // Prepend noise functions and uniforms
-    shader.vertexShader = /* glsl */ `
-      uniform float uTime;
-      uniform vec3 uMouse;
-
-      // Helper: compute total displacement for a given position
-      ${noiseGLSL}
-
-      float getDisplacement(vec3 pos, float time, vec3 mousePos) {
-        float n1 = cnoise(pos * 0.3 + time * 0.3) * 0.7;
-        float n2 = cnoise(pos * 0.6 + time * 0.45) * 0.35;
-        float n3 = cnoise(pos * 1.2 + time * 0.7) * 0.15;
-        float noise = n1 + n2 + n3;
-
-        float dist = distance(pos, mousePos);
-        float mouseEff = smoothstep(12.0, 0.0, dist) * 1.5;
-
-        return noise + mouseEff;
-      }
-    ` + shader.vertexShader;
-
-    // Hook into normal computation to recalculate after displacement
-    shader.vertexShader = shader.vertexShader.replace(
-      '#include <beginnormal_vertex>',
-      /* glsl */ `
-        #include <beginnormal_vertex>
-
-        // Recalculate normals using finite differences of the displacement field
-        vec3 mw = vec3(uMouse.x * 18.0, uMouse.y * 12.0, 5.0);
-        float eps = 0.05;
-        vec3 p = position;
-        float d  = getDisplacement(p, uTime, mw);
-        float dx = getDisplacement(p + vec3(eps, 0.0, 0.0), uTime, mw);
-        float dy = getDisplacement(p + vec3(0.0, eps, 0.0), uTime, mw);
-        float dz = getDisplacement(p + vec3(0.0, 0.0, eps), uTime, mw);
-
-        vec3 grad = vec3(dx - d, dy - d, dz - d) / eps;
-        objectNormal = normalize(objectNormal - grad * 0.5);
-      `
-    );
-
-    // Replace the vertex transform
-    shader.vertexShader = shader.vertexShader.replace(
-      '#include <begin_vertex>',
-      /* glsl */ `
-        #include <begin_vertex>
-
-        vec3 mouseW = vec3(uMouse.x * 18.0, uMouse.y * 12.0, 5.0);
-        float totalDisplacement = getDisplacement(position, uTime, mouseW);
-        transformed += normal * totalDisplacement;
-      `
-    );
-
-    // --- Fragment shader: darken Fresnel-bright edges ---
-    shader.fragmentShader = shader.fragmentShader.replace(
-      '#include <output_fragment>',
-      /* glsl */ `
-        #include <output_fragment>
-        
-        // Darken edges where Fresnel makes them too bright
-        // Use view-space normal dot view direction
-        vec3 viewDir = normalize(vViewPosition);
-        vec3 normalView = normalize(vNormal);
-        float fresnel = 1.0 - abs(dot(normalView, viewDir));
-        float edgeDarken = 1.0 - pow(fresnel, 2.0) * 0.85;
-        gl_FragColor.rgb *= edgeDarken;
-      `
-    );
-  };
-
-  fluidMesh = new THREE.Mesh(geometry, material);
-
-  // Position camera offset for desktop (fluid on the right side)
-  const isMobile = window.innerWidth <= 768;
   const xOffset = isMobile ? 0 : -5;
   const yOffset = isMobile ? -3 : 0;
   camera.position.set(xOffset, yOffset, 30);
   camera.lookAt(xOffset, yOffset, 0);
 
-  scene.add(fluidMesh);
+  scene.add(planetMesh);
 }
 
-// ============================================
-// Dark Environment Map (programmatic — no HDRI)
-// ============================================
-// Create a tiny dark CubeTexture for PBR reflections
-// This gives metallic look without bright studio reflections
-function createDarkEnvironment() {
-  const size = 4;
-  const data = new Uint8Array(size * size * 4);
-  // Fill with very dark grey (not pure black — need minimal reflection)
-  for (let i = 0; i < size * size; i++) {
-    data[i * 4] = 3;     // R
-    data[i * 4 + 1] = 3; // G
-    data[i * 4 + 2] = 5; // B (tiny blue tint)
-    data[i * 4 + 3] = 255;
-  }
-  
-  const faces = [];
-  for (let i = 0; i < 6; i++) {
-    faces.push(new THREE.DataTexture(data.slice(), size, size, THREE.RGBAFormat));
-    faces[i].needsUpdate = true;
-  }
-  
-  // Use PMREMGenerator to create a proper environment from a simple scene
-  const pmremGenerator = new THREE.PMREMGenerator(renderer);
-  const envScene = new THREE.Scene();
-  envScene.background = new THREE.Color(0x010103);
-  
-  // Add a few subtle colored lights to the env scene for interesting reflections
-  const envLight1 = new THREE.PointLight(0x1a2a4a, 5, 50);
-  envLight1.position.set(10, 10, 10);
-  envScene.add(envLight1);
-  
-  const envLight2 = new THREE.PointLight(0x2a1a0a, 3, 50);
-  envLight2.position.set(-10, -5, -10);
-  envScene.add(envLight2);
-  
-  const envMap = pmremGenerator.fromScene(envScene, 0.04).texture;
-  pmremGenerator.dispose();
-  
-  return envMap;
-}
-
-scene.environment = createDarkEnvironment();
-initFluid();
+initPlanet();
 
 // ============================================
-// Lighting (all controlled — no HDRI)
+// Lighting
 // ============================================
-const ambientLight = new THREE.AmbientLight(0x0a0a15, 0.3);
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.15);
 scene.add(ambientLight);
 
-// Blue rim light for sci-fi / tech vibe
-const rimLight = new THREE.DirectionalLight(0x2244aa, 1.5);
-rimLight.position.set(-8, 5, -10);
+const keyLight = new THREE.DirectionalLight(0xffffff, 1.2);
+keyLight.position.set(8, 6, 10);
+scene.add(keyLight);
+
+const fillLight = new THREE.DirectionalLight(0xe8e8ff, 0.5);
+fillLight.position.set(-8, 3, 6);
+scene.add(fillLight);
+
+const rimLight = new THREE.DirectionalLight(0xffffff, 0.6);
+rimLight.position.set(-3, 5, -10);
 scene.add(rimLight);
 
-// Warm accent for contrast
-const warmLight = new THREE.DirectionalLight(0xff6633, 0.6);
-warmLight.position.set(6, -3, 8);
-scene.add(warmLight);
-
-// Top spotlight for dramatic highlights
-const topLight = new THREE.DirectionalLight(0xcccccc, 0.4);
-topLight.position.set(0, 15, 5);
-scene.add(topLight);
+const bottomLight = new THREE.DirectionalLight(0xcccccc, 0.3);
+bottomLight.position.set(0, -10, 5);
+scene.add(bottomLight);
 
 // ============================================
-// Mouse tracking
+// Mouse tracking (desktop) + Touch (mobile)
 // ============================================
 document.addEventListener('mousemove', (event) => {
-  if (window.innerWidth <= 768) return;
+  if (isMobile) return;
   targetMouse.x = (event.clientX / window.innerWidth) * 2 - 1;
   targetMouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 });
+
+// Touch support for mobile — drag to rotate
+let touchStartX = 0;
+let touchBaseRotation = 0;
+
+document.addEventListener('touchstart', (e) => {
+  if (!isMobile) return;
+  touchStartX = e.touches[0].clientX;
+  touchBaseRotation = planetMesh ? planetMesh.rotation.y : 0;
+}, { passive: true });
+
+document.addEventListener('touchmove', (e) => {
+  if (!isMobile || !planetMesh) return;
+  const dx = e.touches[0].clientX - touchStartX;
+  targetMouse.x = dx / window.innerWidth * 2;
+}, { passive: true });
+
+document.addEventListener('touchend', () => {
+  targetMouse.x = 0;
+  targetMouse.y = 0;
+}, { passive: true });
 
 // ============================================
 // Responsiveness
@@ -294,19 +229,19 @@ window.addEventListener('resize', () => {
   camera.aspect = container.clientWidth / container.clientHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(container.clientWidth, container.clientHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, window.innerWidth <= 768 ? 1.5 : 2));
 
-  if (fluidMesh) {
-    const isMobile = window.innerWidth <= 768;
-    const xOffset = isMobile ? 0 : -5;
-    const yOffset = isMobile ? -3 : 0;
+  if (planetMesh) {
+    const mobile = window.innerWidth <= 768;
+    const xOffset = mobile ? 0 : -5;
+    const yOffset = mobile ? -3 : 0;
     camera.position.set(xOffset, yOffset, 30);
     camera.lookAt(xOffset, yOffset, 0);
   }
 });
 
 // ============================================
-// Animation Loop
+// Animation Loop (started after textures load)
 // ============================================
 const clock = new THREE.Clock();
 
@@ -314,23 +249,40 @@ function animate() {
   requestAnimationFrame(animate);
 
   const elapsed = clock.getElapsedTime();
-  uniforms.uTime.value = elapsed;
 
-  // Smooth mouse lerp
-  mouse.x += (targetMouse.x - mouse.x) * 0.08;
-  mouse.y += (targetMouse.y - mouse.y) * 0.08;
-  uniforms.uMouse.value.set(mouse.x, mouse.y, 0);
+  mouse.x += (targetMouse.x - mouse.x) * 0.05;
+  mouse.y += (targetMouse.y - mouse.y) * 0.05;
 
-  if (fluidMesh) {
-    // Slow continuous rotation to show off reflections from all angles
-    fluidMesh.rotation.y = elapsed * 0.08;
-    fluidMesh.rotation.z = elapsed * 0.04;
+  if (planetMesh) {
+    planetMesh.rotation.y = elapsed * 0.08 + mouse.x * 0.4;
+    planetMesh.rotation.x = 0.15 + mouse.y * 0.3;
   }
 
   renderer.render(scene, camera);
 }
 
-animate();
+// ============================================
+// Lazy load videos — only when visible
+// ============================================
+function initLazyVideos() {
+  const videos = document.querySelectorAll('video[data-src]');
+  if (!videos.length) return;
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const video = entry.target;
+        video.src = video.dataset.src;
+        video.load();
+        observer.unobserve(video);
+      }
+    });
+  }, { rootMargin: '200px' });
+
+  videos.forEach(v => observer.observe(v));
+}
+
+initLazyVideos();
 
 // ============================================
 // Video Hover Logic (cases section)
