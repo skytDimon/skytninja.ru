@@ -37,6 +37,12 @@ window.addEventListener('load', () => {
   hidePreloader();
 });
 
+// Safety timeout — force-hide preloader after 5 seconds in case resources fail
+setTimeout(() => {
+  clearInterval(fakeProgressInterval);
+  hidePreloader();
+}, 5000);
+
 // ============================================
 // Lazy load videos — only when visible
 // ============================================

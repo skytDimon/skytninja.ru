@@ -253,6 +253,8 @@ body {
   letter-spacing: 2px;
   margin-bottom: 36px;
   color: var(--text-main);
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .accent-text {
@@ -855,7 +857,8 @@ body {
 
 @media (max-width: 768px) {
   .hero-title {
-    font-size: 2.6rem;
+    font-size: clamp(1.8rem, 8vw, 2.6rem);
+    letter-spacing: 1px;
   }
 
   .main-nav {
@@ -878,10 +881,11 @@ body {
   .hero {
     min-height: 100vh;
     min-height: 100dvh;
+    overflow: hidden;
   }
 
   .hero-container {
-    padding: 100px 24px 40px;
+    padding: 100px 20px 40px;
     text-align: center;
     justify-content: center;
   }
@@ -891,6 +895,8 @@ body {
     display: flex;
     flex-direction: column;
     max-width: 100%;
+    position: relative;
+    z-index: 10;
   }
 
   .hero-description {
@@ -904,12 +910,23 @@ body {
     letter-spacing: 3px;
   }
 
-  /* Planet as background on mobile */
+  /* Bird as subtle background on mobile */
   #canvas-container {
-    opacity: 0.35;
+    opacity: 0.25;
     width: 100%;
-    align-items: flex-start;
-    padding-top: 15%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    right: 0;
+    align-items: center;
+    justify-content: center;
+    padding-top: 0;
+  }
+
+  #canvas-container .hero-video {
+    max-width: 90%;
+    -webkit-mask-image: radial-gradient(ellipse 60% 60% at center, #000 30%, transparent 90%);
+    mask-image: radial-gradient(ellipse 60% 60% at center, #000 30%, transparent 90%);
   }
 
   .services-grid {
@@ -964,11 +981,23 @@ body {
 
 @media (max-width: 480px) {
   .hero-title {
-    font-size: 2.2rem;
+    font-size: clamp(1.6rem, 7.5vw, 2.2rem);
+    letter-spacing: 0.5px;
+    margin-bottom: 24px;
   }
 
   .hero-description {
-    font-size: 0.82rem;
+    font-size: 0.78rem;
+    padding: 0 8px;
+  }
+
+  .hero-subtitle {
+    font-size: 0.6rem;
+    letter-spacing: 2px;
+  }
+
+  .hero-container {
+    padding: 90px 16px 32px;
   }
 
   .section-title {
