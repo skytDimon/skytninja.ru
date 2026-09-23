@@ -604,6 +604,41 @@ body {
   margin-bottom: 0;
 }
 
+.about-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.about-list li {
+  position: relative;
+  padding-left: 20px;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  font-weight: 300;
+  line-height: 1.8;
+}
+
+.about-list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 10px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--accent-color);
+}
+
+.about-list li strong {
+  color: var(--text-main);
+  font-weight: 400;
+}
+
 .about-contact-card {
   background: var(--bg-card);
   border: 1px solid var(--border-card);
