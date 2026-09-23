@@ -195,18 +195,27 @@ body {
 #canvas-container {
   position: absolute;
   top: 0;
-  left: 0;
-  width: 100%;
+  right: 0;
+  width: 55%;
   height: 100%;
   z-index: 0;
   pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-main);
 }
 
-#canvas-container canvas {
+#canvas-container .hero-video {
   display: block;
   width: 100%;
-  height: 100%;
+  max-width: 800px;
+  height: auto;
+  object-fit: contain;
+  mix-blend-mode: lighten;
   outline: none;
+  -webkit-mask-image: radial-gradient(ellipse 70% 70% at center, #000 40%, transparent 100%);
+  mask-image: radial-gradient(ellipse 70% 70% at center, #000 40%, transparent 100%);
 }
 
 .hero-container {
@@ -898,6 +907,9 @@ body {
   /* Planet as background on mobile */
   #canvas-container {
     opacity: 0.35;
+    width: 100%;
+    align-items: flex-start;
+    padding-top: 15%;
   }
 
   .services-grid {
