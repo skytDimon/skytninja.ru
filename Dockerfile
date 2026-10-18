@@ -4,6 +4,9 @@ FROM node:22-alpine as builder
 # Set the working directory
 WORKDIR /app
 
+# Puppeteer нужен только для capture.js — Chromium в образ не качаем
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+
 # Copy package files
 COPY package*.json ./
 

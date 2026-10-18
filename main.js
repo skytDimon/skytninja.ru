@@ -76,3 +76,80 @@ document.querySelectorAll('.case-card').forEach(card => {
     card.addEventListener('mouseleave', () => video.play());
   }
 });
+
+// ============================================
+// Mobile navigation
+// ============================================
+const hamburger = document.getElementById('hamburger');
+const mobileNav = document.getElementById('mobile-nav');
+
+function setMobileNav(open) {
+  hamburger.classList.toggle('active', open);
+  mobileNav.classList.toggle('active', open);
+  hamburger.setAttribute('aria-expanded', String(open));
+  document.body.style.overflow = open ? 'hidden' : '';
+}
+
+if (hamburger && mobileNav) {
+  hamburger.setAttribute('aria-expanded', 'false');
+  hamburger.setAttribute('aria-controls', 'mobile-nav');
+  hamburger.addEventListener('click', () => setMobileNav(!mobileNav.classList.contains('active')));
+  mobileNav.querySelectorAll('a').forEach(link => link.addEventListener('click', () => setMobileNav(false)));
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') setMobileNav(false);
+  });
+}
+
+// ============================================
+// Scroll reveal + count-up stats
+// ============================================
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function countUp(el) {
+  const target = Number(el.dataset.count);
+  if (reducedMotion || target === 0) return;
+  const duration = 1200;
+  const start = performance.now();
+  const tick = now => {
+    const t = Math.min((now - start) / duration, 1);
+    el.textContent = Math.round(target * (1 - (1 - t) ** 3));
+    if (t < 1) requestAnimationFrame(tick);
+  };
+  el.textContent = '0';
+  requestAnimationFrame(tick);
+}
+
+const revealObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (!entry.isIntersecting) return;
+    entry.target.classList.add('is-visible');
+    revealObserver.unobserve(entry.target);
+  });
+}, { threshold: 0.15 });
+
+document.querySelectorAll('[data-reveal]').forEach((el, i) => {
+  el.style.setProperty('--reveal-delay', `${(i % 3) * 80}ms`);
+  revealObserver.observe(el);
+});
+
+const statObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (!entry.isIntersecting) return;
+    entry.target.querySelectorAll('[data-count]').forEach(countUp);
+    statObserver.unobserve(entry.target);
+  });
+}, { threshold: 0.6 });
+
+document.querySelectorAll('.about-stats').forEach(el => statObserver.observe(el));
+
+// ============================================
+// Reduced motion — no autoplaying video
+// ============================================
+if (reducedMotion) {
+  document.querySelectorAll('video').forEach(v => {
+    v.removeAttribute('autoplay');
+    v.pause();
+  });
+  document.querySelectorAll('.case-card video').forEach(v =>
+    v.addEventListener('loadeddata', () => v.pause(), { once: true }));
+}

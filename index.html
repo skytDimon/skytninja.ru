@@ -8,6 +8,33 @@
   <meta name="description"
     content="SkytNinja — создаём высококонверсионные сайты и сложные веб-приложения, которые выделяют ваш бизнес среди конкурентов." />
 
+  <link rel="canonical" href="https://skytninja.ru/" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <meta name="theme-color" content="#0a0a0a" />
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="ru_RU" />
+  <meta property="og:site_name" content="SkytNinja" />
+  <meta property="og:title" content="SkytNinja — Премиальная веб-разработка" />
+  <meta property="og:description"
+    content="Сайты и веб-приложения под ключ: корпоративные сайты, лендинги, интернет-магазины. Работа по постоплате." />
+  <meta property="og:url" content="https://skytninja.ru/" />
+  <meta property="og:image" content="https://skytninja.ru/og-image.jpg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "ProfessionalService",
+      "name": "SkytNinja",
+      "url": "https://skytninja.ru/",
+      "description": "Разработка сайтов и веб-приложений под ключ",
+      "telephone": "+7-904-170-32-17",
+      "email": "hello@skytninja.ru",
+      "address": { "@type": "PostalAddress", "addressLocality": "Екатеринбург", "addressCountry": "RU" },
+      "founder": { "@type": "Person", "name": "Дмитрий Потапов" },
+      "sameAs": ["https://t.me/skytninja", "https://github.com/skytDimon/"]
+    }
+  </script>
+
   <!-- Fonts loaded locally via style.css (TT Autonomous & IBM Plex Mono) -->
 </head>
 
@@ -66,13 +93,13 @@
     <!-- About Section -->
     <section class="about" id="about">
       <div class="section-container">
-        <div class="section-header">
+        <div class="section-header" data-reveal>
           <h2 class="section-title">обо мне</h2>
           <div class="section-line"></div>
         </div>
 
         <div class="about-grid">
-          <div class="about-main">
+          <div class="about-main" data-reveal>
             <div class="about-photo-wrapper">
               <img src="/dmitry.jpg" alt="Дмитрий Потапов" class="about-photo" />
             </div>
@@ -86,9 +113,23 @@
               <li><strong>Оплата за результат:</strong> работаю по постоплате — вы платите только за готовый проект.</li>
               <li><strong>Любая география:</strong> живу в Екатеринбурге, работаю с бизнесом из любой точки мира.</li>
             </ul>
+            <div class="about-stats">
+              <div class="stat">
+                <span class="stat-value"><span data-count="3">3</span>+</span>
+                <span class="stat-label">года опыта</span>
+              </div>
+              <div class="stat">
+                <span class="stat-value" data-count="4">4</span>
+                <span class="stat-label">проекта в портфолио</span>
+              </div>
+              <div class="stat">
+                <span class="stat-value"><span data-count="0">0</span> ₽</span>
+                <span class="stat-label">предоплата</span>
+              </div>
+            </div>
           </div>
 
-          <div class="about-contacts">
+          <div class="about-contacts" data-reveal>
             <div class="about-contact-card">
               <div class="contact-item">
                 <svg class="contact-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -344,25 +385,25 @@
     <!-- Services Section -->
     <section class="services" id="services">
       <div class="section-container">
-        <div class="section-header">
+        <div class="section-header" data-reveal>
           <h2 class="section-title">направления</h2>
           <div class="section-line"></div>
         </div>
 
         <div class="services-grid">
-          <div class="service-card">
+          <div class="service-card" data-reveal>
             <div class="service-icon">01</div>
             <h3 class="service-title">Корпоративные сайты</h3>
             <p class="service-desc">Сложные, масштабируемые решения для среднего и крупного бизнеса с интеграцией CRM и
               аналитики.</p>
           </div>
-          <div class="service-card">
+          <div class="service-card" data-reveal>
             <div class="service-icon">02</div>
             <h3 class="service-title">Landing Pages</h3>
             <p class="service-desc">Мощные посадочные страницы с глубокой аналитикой и высокими показателями конверсии.
             </p>
           </div>
-          <div class="service-card">
+          <div class="service-card" data-reveal>
             <div class="service-icon">03</div>
             <h3 class="service-title">Интернет-магазины</h3>
             <p class="service-desc">Современные e-commerce платформы с удобным UX и автоматизацией продаж.</p>
@@ -374,14 +415,14 @@
     <!-- Cases/Portfolio Section -->
     <section class="cases" id="cases">
       <div class="section-container">
-        <div class="section-header">
+        <div class="section-header" data-reveal>
           <h2 class="section-title">кейсы</h2>
           <div class="section-line"></div>
         </div>
 
         <div class="cases-grid">
           <!-- Case 1 -->
-          <div class="case-card">
+          <div class="case-card" data-reveal>
             <div class="case-video-wrapper">
               <video data-src="/metriks.mp4" autoplay loop muted playsinline preload="none" class="case-video"></video>
             </div>
@@ -392,7 +433,7 @@
             </div>
           </div>
           <!-- Case 2 -->
-          <div class="case-card">
+          <div class="case-card" data-reveal>
             <div class="case-video-wrapper">
               <video data-src="/prime.mp4" autoplay loop muted playsinline preload="none" class="case-video"></video>
             </div>
@@ -403,7 +444,7 @@
             </div>
           </div>
           <!-- Case 3 -->
-          <div class="case-card">
+          <div class="case-card" data-reveal>
             <div class="case-video-wrapper">
               <video data-src="/romul.mp4" autoplay loop muted playsinline preload="none" class="case-video"></video>
             </div>
@@ -411,6 +452,17 @@
               <span class="case-category">проект</span>
               <h3 class="case-title">Romulus-et-Remus</h3>
               <span class="case-link-disabled">Проект закрыт заказчиком</span>
+            </div>
+          </div>
+          <!-- Case 4 -->
+          <div class="case-card" data-reveal>
+            <div class="case-video-wrapper">
+              <video data-src="/sandonato.mp4" autoplay loop muted playsinline preload="none" class="case-video"></video>
+            </div>
+            <div class="case-content">
+              <span class="case-category">корпоративный сайт</span>
+              <h3 class="case-title">CM-HOUSE — модульные дома и бани</h3>
+              <a href="https://sandonato.ru/" target="_blank" rel="noopener" class="case-link">Смотреть проект &rarr;</a>
             </div>
           </div>
         </div>
@@ -449,25 +501,6 @@
   </nav>
 
   <!-- Hamburger Toggle -->
-  <script>
-    const hamburger = document.getElementById('hamburger');
-    const mobileNav = document.getElementById('mobile-nav');
-    if (hamburger && mobileNav) {
-      hamburger.addEventListener('click', () => {
-        hamburger.classList.toggle('active');
-        mobileNav.classList.toggle('active');
-        document.body.style.overflow = mobileNav.classList.contains('active') ? 'hidden' : '';
-      });
-      mobileNav.querySelectorAll('a').forEach(link => {
-        link.addEventListener('click', () => {
-          hamburger.classList.remove('active');
-          mobileNav.classList.remove('active');
-          document.body.style.overflow = '';
-        });
-      });
-    }
-  </script>
-
   <!-- Main Script -->
   <script type="module" src="/main.js"></script>
 </body>
